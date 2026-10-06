@@ -6,7 +6,14 @@ st.title("AI-Powered Data Analyst")
 file = st.file_uploader("Upload a CSV or Excel file", type=["csv", "xlsx"])
 
 if file:
-    df = pd.read_csv(file) if file.name.endswith(".csv") else pd.read_excel(file)
+    if file.name.endswith(".csv"):
+        try:
+            df = pd.read_csv(file)
+        except UnicodeDecodeError:
+            file.seek(0)
+            df = pd.read_csv(file, encoding="latin-1")
+    else:
+        df = pd.read_excel(file)
 
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Rows", df.shape[0])
@@ -25,3 +32,6 @@ if file:
         "unique": df.nunique(),
     })
     st.dataframe(profile)
+
+    st.subheader("Summary statistics")
+    st.dataframe(df.describe())
