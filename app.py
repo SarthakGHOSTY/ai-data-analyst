@@ -17,5 +17,11 @@ if file:
     st.subheader("Preview")
     st.dataframe(df.head())
 
-    st.subheader("Column types")
-    st.dataframe(df.dtypes.astype(str).rename("dtype"))
+    st.subheader("Column profile")
+    profile = pd.DataFrame({
+        "dtype": df.dtypes.astype(str),
+        "missing": df.isna().sum(),
+        "missing_%": (df.isna().mean() * 100).round(1),
+        "unique": df.nunique(),
+    })
+    st.dataframe(profile)
