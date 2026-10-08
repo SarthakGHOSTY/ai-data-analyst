@@ -1,6 +1,13 @@
 import streamlit as st
 
-from utils.cleaner import drop_duplicates, fix_options, handle_missing, infer_types
+from utils.cleaner import (
+    detect_outliers,
+    drop_duplicates,
+    fix_options,
+    handle_missing,
+    handle_outliers,
+    infer_types,
+)
 from utils.loader import load_data
 from utils.profiler import column_profile, summary_metrics
 
@@ -51,3 +58,15 @@ if file:
 
     st.subheader("Summary statistics after cleaning")
     st.dataframe(cleaned.describe())
+
+    st.subheader("Outlier check (IQR method)")
+    outliers = detect_outliers(cleaned)
+    st.dataframe(outliers)
+
+    out_strategies = {}
+    for col in outliers.loc[outliers["outliers"] > 0, "column"]:
+        out_strategies[col] = st.selectbox(
+            f"{col} outliers", ["keep", "remove rows", "cap at bounds"], key=f"out_{col}"
+        )
+    cleaned, out_fixes = handle_outliers(cleaned, out_strategies)
+    st.write("**Outlier fixes applied:**", "; ".join(out_fixes) or "none")

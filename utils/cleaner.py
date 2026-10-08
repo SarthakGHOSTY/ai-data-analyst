@@ -65,3 +65,43 @@ def handle_missing(df: pd.DataFrame, strategies: dict) -> tuple[pd.DataFrame, li
             df[col] = df[col].fillna("Unknown")
         log.append(f"{col}: {strategy} ({n} missing)")
     return df, log
+
+
+def detect_outliers(df: pd.DataFrame) -> pd.DataFrame:
+    columns = ["column", "lower_bound", "upper_bound", "outliers", "outlier_%"]
+    rows = []
+    for col in df.select_dtypes("number").columns:
+        if col.lower().endswith("id"):
+            continue
+        s = df[col].dropna()
+        if s.empty:
+            continue
+        q1, q3 = s.quantile(0.25), s.quantile(0.75)
+        iqr = q3 - q1
+        if iqr == 0:
+            continue
+        low, high = q1 - 1.5 * iqr, q3 + 1.5 * iqr
+        n = int(((s < low) | (s > high)).sum())
+        rows.append([col, round(float(low), 2), round(float(high), 2), n, round(n / len(s) * 100, 1)])
+    return pd.DataFrame(rows, columns=columns)
+
+def handle_outliers(df: pd.DataFrame, strategies: dict) -> tuple[pd.DataFrame, list[str]]:
+    df = df.copy()
+    log = []
+    for col, strategy in strategies.items():
+        if strategy == "keep":
+            continue
+        s = df[col]
+        q1, q3 = s.quantile(0.25), s.quantile(0.75)
+        iqr = q3 - q1
+        low, high = q1 - 1.5 * iqr, q3 + 1.5 * iqr
+        mask = ((s < low) | (s > high)).fillna(False)
+        n = int(mask.sum())
+        if n == 0:
+            continue
+        if strategy == "remove rows":
+            df = df[~mask]
+        elif strategy == "cap at bounds":
+            df[col] = s.clip(lower=low, upper=high)
+        log.append(f"{col}: {strategy} ({n} outliers)")
+    return df, log
