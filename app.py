@@ -1,6 +1,6 @@
 import streamlit as st
 
-from utils.cleaner import drop_duplicates, infer_types
+from utils.cleaner import drop_duplicates, fix_options, handle_missing, infer_types
 from utils.loader import load_data
 from utils.profiler import column_profile, summary_metrics
 
@@ -28,6 +28,23 @@ if file:
 
     st.write("**Type changes:**", ", ".join(type_changes) or "none")
     st.write(f"**Duplicate rows removed:** {removed}")
+
+    st.subheader("Column profile after cleaning")
+    st.dataframe(column_profile(cleaned))
+
+    st.subheader("Summary statistics after cleaning")
+    st.dataframe(cleaned.describe())
+
+    st.subheader("Missing values")
+    strategies = {}
+    for c in cleaned.columns:
+        n = int(cleaned[c].isna().sum())
+        if n:
+            strategies[c] = st.selectbox(
+                f"{c} ({n} missing)", fix_options(cleaned[c]), key=f"miss_{c}"
+            )
+    cleaned, fixes = handle_missing(cleaned, strategies)
+    st.write("**Fixes applied:**", "; ".join(fixes) or "none")
 
     st.subheader("Column profile after cleaning")
     st.dataframe(column_profile(cleaned))
