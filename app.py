@@ -1,5 +1,6 @@
 import streamlit as st
 
+from utils.cleaner import drop_duplicates, infer_types
 from utils.loader import load_data
 from utils.profiler import column_profile, summary_metrics
 
@@ -21,5 +22,15 @@ if file:
     st.subheader("Column profile")
     st.dataframe(column_profile(df))
 
-    st.subheader("Summary statistics")
-    st.dataframe(df.describe())
+    st.header("Cleaning")
+    cleaned, type_changes = infer_types(df)
+    cleaned, removed = drop_duplicates(cleaned)
+
+    st.write("**Type changes:**", ", ".join(type_changes) or "none")
+    st.write(f"**Duplicate rows removed:** {removed}")
+
+    st.subheader("Column profile after cleaning")
+    st.dataframe(column_profile(cleaned))
+
+    st.subheader("Summary statistics after cleaning")
+    st.dataframe(cleaned.describe())
