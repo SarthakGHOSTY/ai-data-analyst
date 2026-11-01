@@ -2,7 +2,7 @@ import pandas as pd
 import streamlit as st
 from utils.db import run_query
 from utils.pipeline import answer_question
-
+from utils.charts import make_chart, suggest_chart
 
 from utils.cleaner import (
     detect_outliers,
@@ -88,7 +88,12 @@ if file:
     sql = st.text_area("SQL (table name: data)", "SELECT * FROM data LIMIT 5")
     if st.button("Run query"):
         try:
-            st.dataframe(run_query(cleaned, sql))
+            res = run_query(cleaned, sql)
+            st.dataframe(res)
+            pick = suggest_chart(res)
+            if pick:
+                kind, x, y = pick
+                st.plotly_chart(make_chart(res, kind, x, y))
         except Exception as e:
             st.error(str(e))
 
@@ -112,4 +117,9 @@ if file:
             if out["error"]:
                 st.error(out["error"])
             else:
-                st.dataframe(out["df"].head(1000))
+                result = out["df"].head(1000)
+                st.dataframe(result)
+                pick = suggest_chart(result)
+                if pick:
+                    kind, x, y = pick
+                    st.plotly_chart(make_chart(result, kind, x, y))
