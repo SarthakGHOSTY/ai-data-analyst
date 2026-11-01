@@ -1,5 +1,6 @@
 import pandas as pd
 import streamlit as st
+from utils.db import run_query
 
 from utils.cleaner import (
     detect_outliers,
@@ -79,3 +80,12 @@ if file:
         "cleaned_data.csv",
         "text/csv",
     )
+
+
+    st.header("SQL playground")
+    sql = st.text_area("SQL (table name: data)", "SELECT * FROM data LIMIT 5")
+    if st.button("Run query"):
+        try:
+            st.dataframe(run_query(cleaned, sql))
+        except Exception as e:
+            st.error(str(e))
