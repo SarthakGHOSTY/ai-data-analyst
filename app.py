@@ -59,6 +59,9 @@ if file:
         )
     cleaned, out_fixes = handle_outliers(cleaned, out_strategies)
     st.write("**Outlier fixes applied:**", "; ".join(out_fixes) or "none")
+    cleaned, extra_dupes = drop_duplicates(cleaned)
+    if extra_dupes:
+        st.write(f"**Duplicates created by outlier capping, removed:** {extra_dupes}")
 
     st.header("Cleaning report")
     report = pd.DataFrame({"before": summary_metrics(df), "after": summary_metrics(cleaned)})
