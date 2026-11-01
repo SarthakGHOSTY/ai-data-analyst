@@ -40,15 +40,27 @@ def clean_sql(text: str) -> str:
     return text.strip().rstrip(";").strip()
 
 
-def generate_sql(question: str, df: pd.DataFrame, retries: int = 3) -> str:
+def call_llm(prompt: str, retries: int = 3) -> str:
     client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
-    prompt = build_prompt(question, df)
     for attempt in range(retries):
         try:
-            response = client.models.generate_content(model=MODEL, contents=prompt)
-            return clean_sql(response.text)
+            return client.models.generate_content(model=MODEL, contents=prompt).text
         except errors.APIError as e:
             if e.code in (429, 500, 503, 504) and attempt < retries - 1:
                 time.sleep(2 * (attempt + 1))
                 continue
             raise
+
+
+def generate_sql(question: str, df: pd.DataFrame) -> str:
+    return clean_sql(call_llm(build_prompt(question, df)))
+
+
+def fix_sql(question: str, df: pd.DataFrame, bad_sql: str, error: str) -> str:
+    base = build_prompt(question, df).rsplit("SQL:", 1)[0]
+    prompt = (
+        f"{base}Your previous query:\n{bad_sql}\n\n"
+        f"failed with this error:\n{error}\n\n"
+        "Write a corrected query that follows the same rules.\nSQL:"
+    )
+    return clean_sql(call_llm(prompt))

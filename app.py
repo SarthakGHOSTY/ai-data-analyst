@@ -1,8 +1,8 @@
 import pandas as pd
 import streamlit as st
 from utils.db import run_query
-from utils.llm import generate_sql
-from utils.validator import validate_sql
+from utils.pipeline import answer_question
+
 
 from utils.cleaner import (
     detect_outliers,
@@ -96,22 +96,20 @@ if file:
 
     st.header("Ask a question")
     question = st.text_input("Ask about your data in plain English")
-    if st.button("Generate SQL"):
+    if st.button("Ask"):
         if not question:
             st.warning("Type a question first.")
         else:
-            with st.spinner("Asking Gemini..."):
+            with st.spinner("Thinking..."):
                 try:
-                    generated = generate_sql(question, cleaned)
+                    out = answer_question(question, cleaned)
                 except Exception as e:
                     st.error(str(e))
                     st.stop()
-            st.code(generated, language="sql")
-            ok, result = validate_sql(generated)
-            if not ok:
-                st.error(f"Blocked: {result}")
+            st.code(out["sql"], language="sql")
+            if len(out["attempts"]) > 1:
+                st.caption(f"Needed {len(out['attempts'])} attempts to get a working query.")
+            if out["error"]:
+                st.error(out["error"])
             else:
-                try:
-                    st.dataframe(run_query(cleaned, result).head(1000))
-                except Exception as e:
-                    st.error(f"Query failed: {e}")
+                st.dataframe(out["df"].head(1000))
