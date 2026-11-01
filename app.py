@@ -1,3 +1,4 @@
+import pandas as pd
 import streamlit as st
 
 from utils.cleaner import (
@@ -36,12 +37,6 @@ if file:
     st.write("**Type changes:**", ", ".join(type_changes) or "none")
     st.write(f"**Duplicate rows removed:** {removed}")
 
-    st.subheader("Column profile after cleaning")
-    st.dataframe(column_profile(cleaned))
-
-    st.subheader("Summary statistics after cleaning")
-    st.dataframe(cleaned.describe())
-
     st.subheader("Missing values")
     strategies = {}
     for c in cleaned.columns:
@@ -52,12 +47,6 @@ if file:
             )
     cleaned, fixes = handle_missing(cleaned, strategies)
     st.write("**Fixes applied:**", "; ".join(fixes) or "none")
-
-    st.subheader("Column profile after cleaning")
-    st.dataframe(column_profile(cleaned))
-
-    st.subheader("Summary statistics after cleaning")
-    st.dataframe(cleaned.describe())
 
     st.subheader("Outlier check (IQR method)")
     outliers = detect_outliers(cleaned)
@@ -70,3 +59,20 @@ if file:
         )
     cleaned, out_fixes = handle_outliers(cleaned, out_strategies)
     st.write("**Outlier fixes applied:**", "; ".join(out_fixes) or "none")
+
+    st.header("Cleaning report")
+    report = pd.DataFrame({"before": summary_metrics(df), "after": summary_metrics(cleaned)})
+    st.dataframe(report)
+
+    st.subheader("Column profile after cleaning")
+    st.dataframe(column_profile(cleaned))
+
+    st.subheader("Summary statistics after cleaning")
+    st.dataframe(cleaned.describe())
+
+    st.download_button(
+        "Download cleaned CSV",
+        cleaned.to_csv(index=False).encode("utf-8"),
+        "cleaned_data.csv",
+        "text/csv",
+    )
