@@ -1,0 +1,13 @@
+question,passed,attempts,seconds,error,generated_sql
+What was the highest monthly revenue?,True,1,1.4,,"SELECT DATE_TRUNC('month', ""InvoiceDate"") AS month, SUM(""Quantity"" * ""UnitPrice"") AS total_revenue FROM data GROUP BY month ORDER BY total_revenue DESC LIMIT 1"
+What is the average order value per invoice?,True,1,1.0,,"SELECT AVG(order_total) AS avg_order_value FROM ( SELECT ""InvoiceNo"", SUM(""Quantity"" * ""UnitPrice"") AS order_total FROM data GROUP BY ""InvoiceNo"" ) AS sub"
+What was the total revenue in December 2010?,True,1,1.4,,"SELECT SUM(""Quantity"" * ""UnitPrice"") AS total_revenue FROM data WHERE ""InvoiceDate"" >= DATE '2010-12-01' AND ""InvoiceDate"" < DATE '2011-01-01'"
+How many invoices were cancelled?,True,1,1.0,,"SELECT COUNT(DISTINCT ""InvoiceNo"") AS cancelled_invoices FROM data WHERE ""InvoiceNo"" LIKE 'C%'"
+What is the total revenue excluding the United Kingdom?,True,1,1.1,,"SELECT SUM(""Quantity"" * ""UnitPrice"") AS total_revenue FROM data WHERE ""Country"" <> 'United Kingdom'"
+Who are the top 3 customers by total spend?,True,1,1.1,,"SELECT ""CustomerID"" AS customer_id, SUM(""Quantity"" * ""UnitPrice"") AS total_spend FROM data WHERE ""CustomerID"" IS NOT NULL GROUP BY ""CustomerID"" ORDER BY total_spend DESC LIMIT 3"
+How many customers placed more than 10 orders?,True,1,2.3,,"SELECT COUNT(*) AS customers_over_10_orders FROM ( SELECT ""CustomerID"" FROM data WHERE ""CustomerID"" IS NOT NULL GROUP BY ""CustomerID"" HAVING COUNT(DISTINCT ""InvoiceNo"") > 10 ) AS sub"
+What percentage of revenue comes from the United Kingdom?,True,1,1.3,,"SELECT (SUM(CASE WHEN ""Country"" = 'United Kingdom' THEN ""Quantity"" * ""UnitPrice"" ELSE 0 END) / SUM(""Quantity"" * ""UnitPrice"") * 100) AS uk_percentage FROM data"
+Which product has the highest total revenue?,True,1,1.0,,"SELECT ""Description"" AS product, SUM(""Quantity"" * ""UnitPrice"") AS total_revenue FROM data GROUP BY ""Description"" ORDER BY total_revenue DESC LIMIT 1"
+What is the median quantity per row?,True,1,1.5,,SELECT median(Quantity) AS median_quantity FROM data
+How many rows have a missing description?,True,1,1.2,,SELECT COUNT(*) AS missing_description FROM data WHERE Description IS NULL OR Description = ''
+How many custmers are there from France?,True,1,1.0,,"SELECT COUNT(DISTINCT ""CustomerID"") AS num_customers FROM data WHERE ""Country"" = 'France'"
