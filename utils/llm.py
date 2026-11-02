@@ -75,7 +75,7 @@ def fix_sql(question: str, df: pd.DataFrame, bad_sql: str, error: str) -> str:
     return clean_sql(call_llm(prompt))
 
 
-def build_insight_prompt(question: str, sql: str, result: pd.DataFrame) -> str:
+def build_insight_prompt(question: str, sql: str, result: pd.DataFrame, note: str = "") -> str:
     table = result.head(20).to_csv(index=False)
     return f"""You are a data analyst explaining a query result to a non-technical user.
 
@@ -83,9 +83,14 @@ Question: {question}
 SQL used: {sql}
 Result (first rows, CSV):
 {table}
+Data notes: {note or "none"}
 Write 2-3 short sentences in plain English: the direct answer, then one notable
-pattern or caveat. Use only numbers shown in the result. Do not invent causes."""
+pattern or caveat. Rules:
+- Use only numbers shown in the result. Do not invent causes.
+- If the last time period may be incomplete given the data notes, say so instead of calling it a real drop.
+- Write currency amounts as plain numbers with commas and no dollar signs.
+- Do not mention what the result does not show."""
 
 
-def explain_result(question: str, sql: str, result: pd.DataFrame) -> str:
-    return call_llm(build_insight_prompt(question, sql, result)).strip()
+def explain_result(question: str, sql: str, result: pd.DataFrame, note: str = "") -> str:
+    return call_llm(build_insight_prompt(question, sql, result, note)).strip()

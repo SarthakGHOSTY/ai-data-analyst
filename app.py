@@ -1,10 +1,7 @@
 import pandas as pd
 import streamlit as st
-from utils.db import run_query
-from utils.pipeline import answer_question
-from utils.charts import make_chart, suggest_chart
-from utils.llm import explain_result
 
+from utils.charts import make_chart, suggest_chart
 from utils.cleaner import (
     detect_outliers,
     drop_duplicates,
@@ -13,8 +10,20 @@ from utils.cleaner import (
     handle_outliers,
     infer_types,
 )
+from utils.db import run_query
+from utils.llm import explain_result
 from utils.loader import load_data
+from utils.pipeline import answer_question
 from utils.profiler import column_profile, summary_metrics
+from utils.validator import validate_sql
+
+
+def date_note(df):
+    parts = []
+    for c in df.select_dtypes("datetime").columns:
+        parts.append(f"{c} runs from {df[c].min():%Y-%m-%d} to {df[c].max():%Y-%m-%d}")
+    return "; ".join(parts)
+
 
 st.title("AI-Powered Data Analyst")
 
@@ -84,23 +93,25 @@ if file:
         "text/csv",
     )
 
-
     st.header("SQL playground")
     sql = st.text_area("SQL (table name: data)", "SELECT * FROM data LIMIT 5")
     if st.button("Run query"):
-        try:
-            res = run_query(cleaned, sql)
-            st.dataframe(res)
-            pick = suggest_chart(res)
-            if pick:
-                kind, x, y = pick
-                st.plotly_chart(make_chart(res, kind, x, y))
-        except Exception as e:
-            st.error(str(e))
-
-
+        ok, checked = validate_sql(sql)
+        if not ok:
+            st.error(f"Blocked: {checked}")
+        else:
+            try:
+                res = run_query(cleaned, checked)
+                st.dataframe(res)
+                pick = suggest_chart(res)
+                if pick:
+                    kind, x, y = pick
+                    st.plotly_chart(make_chart(res, kind, x, y), key="playground_chart")
+            except Exception as e:
+                st.error(str(e))
 
     st.header("Ask a question")
+    history = st.session_state.setdefault("history", [])
     question = st.text_input("Ask about your data in plain English")
     if st.button("Ask"):
         if not question:
@@ -112,32 +123,38 @@ if file:
                 except Exception as e:
                     st.error(str(e))
                     st.stop()
-            out["question"] = question
-            out["file"] = file.name
-            out["insight"] = None
-            st.session_state["last"] = out
+            out.update(question=question, file=file.name, insight=None)
+            history.append(out)
 
-    last = st.session_state.get("last")
-    if last and last.get("file") == file.name:
-        st.code(last["sql"], language="sql")
-        if len(last["attempts"]) > 1:
-            st.caption(f"Needed {len(last['attempts'])} attempts to get a working query.")
-        if last["error"]:
-            st.error(last["error"])
-        else:
-            result = last["df"].head(1000)
+    if history and st.button("Clear history"):
+        history.clear()
+        st.rerun()
+
+    for idx in reversed(range(len(history))):
+        item = history[idx]
+        if item["file"] != file.name:
+            continue
+        with st.container(border=True):
+            st.markdown(f"**Q: {item['question']}**")
+            st.code(item["sql"], language="sql")
+            if len(item["attempts"]) > 1:
+                st.caption(f"Needed {len(item['attempts'])} attempts to get a working query.")
+            if item["error"]:
+                st.error(item["error"])
+                continue
+            result = item["df"].head(1000)
             st.dataframe(result)
             pick = suggest_chart(result)
             if pick:
                 kind, x, y = pick
-                st.plotly_chart(make_chart(result, kind, x, y))
-            if st.button("Explain this result"):
+                st.plotly_chart(make_chart(result, kind, x, y), key=f"chart_{idx}")
+            if st.button("Explain this result", key=f"explain_{idx}"):
                 with st.spinner("Writing insight..."):
                     try:
-                        last["insight"] = explain_result(
-                            last["question"], last["sql"], result
+                        item["insight"] = explain_result(
+                            item["question"], item["sql"], result, date_note(cleaned)
                         )
                     except Exception as e:
                         st.error(str(e))
-            if last["insight"]:
-                st.info(last["insight"])
+            if item["insight"]:
+                st.info(item["insight"].replace("$", "\\$"))
