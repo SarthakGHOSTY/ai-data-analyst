@@ -3,11 +3,10 @@ import time
 
 import pandas as pd
 from dotenv import load_dotenv
-from google import genai
-from google.genai import errors
+from groq import APIConnectionError, APIStatusError, Groq
 
-load_dotenv()
-MODEL = "gemini-3.8-flash"
+load_dotenv(override=True)
+MODEL = "openai/gpt-oss-120b"
 
 
 def build_prompt(question: str, df: pd.DataFrame) -> str:
@@ -41,12 +40,22 @@ def clean_sql(text: str) -> str:
 
 
 def call_llm(prompt: str, retries: int = 3) -> str:
-    client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+    client = Groq(api_key=os.environ["GROQ_API_KEY"])
     for attempt in range(retries):
         try:
-            return client.models.generate_content(model=MODEL, contents=prompt).text
-        except errors.APIError as e:
-            if e.code in (429, 500, 503, 504) and attempt < retries - 1:
+            response = client.chat.completions.create(
+                model=MODEL,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0,
+            )
+            return response.choices[0].message.content or ""
+        except APIStatusError as e:
+            if e.status_code in (429, 500, 502, 503, 504) and attempt < retries - 1:
+                time.sleep(2 * (attempt + 1))
+                continue
+            raise
+        except APIConnectionError:
+            if attempt < retries - 1:
                 time.sleep(2 * (attempt + 1))
                 continue
             raise
@@ -64,3 +73,19 @@ def fix_sql(question: str, df: pd.DataFrame, bad_sql: str, error: str) -> str:
         "Write a corrected query that follows the same rules.\nSQL:"
     )
     return clean_sql(call_llm(prompt))
+
+
+def build_insight_prompt(question: str, sql: str, result: pd.DataFrame) -> str:
+    table = result.head(20).to_csv(index=False)
+    return f"""You are a data analyst explaining a query result to a non-technical user.
+
+Question: {question}
+SQL used: {sql}
+Result (first rows, CSV):
+{table}
+Write 2-3 short sentences in plain English: the direct answer, then one notable
+pattern or caveat. Use only numbers shown in the result. Do not invent causes."""
+
+
+def explain_result(question: str, sql: str, result: pd.DataFrame) -> str:
+    return call_llm(build_insight_prompt(question, sql, result)).strip()

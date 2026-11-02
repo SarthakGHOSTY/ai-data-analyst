@@ -3,6 +3,7 @@ import streamlit as st
 from utils.db import run_query
 from utils.pipeline import answer_question
 from utils.charts import make_chart, suggest_chart
+from utils.llm import explain_result
 
 from utils.cleaner import (
     detect_outliers,
@@ -111,15 +112,32 @@ if file:
                 except Exception as e:
                     st.error(str(e))
                     st.stop()
-            st.code(out["sql"], language="sql")
-            if len(out["attempts"]) > 1:
-                st.caption(f"Needed {len(out['attempts'])} attempts to get a working query.")
-            if out["error"]:
-                st.error(out["error"])
-            else:
-                result = out["df"].head(1000)
-                st.dataframe(result)
-                pick = suggest_chart(result)
-                if pick:
-                    kind, x, y = pick
-                    st.plotly_chart(make_chart(result, kind, x, y))
+            out["question"] = question
+            out["file"] = file.name
+            out["insight"] = None
+            st.session_state["last"] = out
+
+    last = st.session_state.get("last")
+    if last and last.get("file") == file.name:
+        st.code(last["sql"], language="sql")
+        if len(last["attempts"]) > 1:
+            st.caption(f"Needed {len(last['attempts'])} attempts to get a working query.")
+        if last["error"]:
+            st.error(last["error"])
+        else:
+            result = last["df"].head(1000)
+            st.dataframe(result)
+            pick = suggest_chart(result)
+            if pick:
+                kind, x, y = pick
+                st.plotly_chart(make_chart(result, kind, x, y))
+            if st.button("Explain this result"):
+                with st.spinner("Writing insight..."):
+                    try:
+                        last["insight"] = explain_result(
+                            last["question"], last["sql"], result
+                        )
+                    except Exception as e:
+                        st.error(str(e))
+            if last["insight"]:
+                st.info(last["insight"])
