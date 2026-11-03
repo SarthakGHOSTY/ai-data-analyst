@@ -14,7 +14,10 @@ def validate_sql(sql: str) -> tuple[bool, str]:
         return False, "Empty query."
     if ";" in sql:
         return False, "Only one statement is allowed."
-
+    # A quoted name after FROM/JOIN can be a file path in DuckDB, e.g. FROM 'x.csv'.
+    if re.search(r"""\b(from|join)\s*(['"])(?!data\2)""", sql, flags=re.I):
+        return False, "Reading files is not allowed."
+    
     # Ignore text inside quotes, so 'update' in a string is not a false alarm.
     check = re.sub(r"'(?:[^']|'')*'", "''", sql)
     check = re.sub(r'"[^"]*"', '""', check).lower()

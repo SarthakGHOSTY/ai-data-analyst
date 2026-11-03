@@ -1,13 +1,50 @@
-question,passed,attempts,seconds,error,generated_sql
-What was the highest monthly revenue?,True,1,1.4,,"SELECT DATE_TRUNC('month', ""InvoiceDate"") AS month, SUM(""Quantity"" * ""UnitPrice"") AS total_revenue FROM data GROUP BY month ORDER BY total_revenue DESC LIMIT 1"
-What is the average order value per invoice?,True,1,1.0,,"SELECT AVG(order_total) AS avg_order_value FROM ( SELECT ""InvoiceNo"", SUM(""Quantity"" * ""UnitPrice"") AS order_total FROM data GROUP BY ""InvoiceNo"" ) AS sub"
-What was the total revenue in December 2010?,True,1,1.4,,"SELECT SUM(""Quantity"" * ""UnitPrice"") AS total_revenue FROM data WHERE ""InvoiceDate"" >= DATE '2010-12-01' AND ""InvoiceDate"" < DATE '2011-01-01'"
-How many invoices were cancelled?,True,1,1.0,,"SELECT COUNT(DISTINCT ""InvoiceNo"") AS cancelled_invoices FROM data WHERE ""InvoiceNo"" LIKE 'C%'"
-What is the total revenue excluding the United Kingdom?,True,1,1.1,,"SELECT SUM(""Quantity"" * ""UnitPrice"") AS total_revenue FROM data WHERE ""Country"" <> 'United Kingdom'"
-Who are the top 3 customers by total spend?,True,1,1.1,,"SELECT ""CustomerID"" AS customer_id, SUM(""Quantity"" * ""UnitPrice"") AS total_spend FROM data WHERE ""CustomerID"" IS NOT NULL GROUP BY ""CustomerID"" ORDER BY total_spend DESC LIMIT 3"
-How many customers placed more than 10 orders?,True,1,2.3,,"SELECT COUNT(*) AS customers_over_10_orders FROM ( SELECT ""CustomerID"" FROM data WHERE ""CustomerID"" IS NOT NULL GROUP BY ""CustomerID"" HAVING COUNT(DISTINCT ""InvoiceNo"") > 10 ) AS sub"
-What percentage of revenue comes from the United Kingdom?,True,1,1.3,,"SELECT (SUM(CASE WHEN ""Country"" = 'United Kingdom' THEN ""Quantity"" * ""UnitPrice"" ELSE 0 END) / SUM(""Quantity"" * ""UnitPrice"") * 100) AS uk_percentage FROM data"
-Which product has the highest total revenue?,True,1,1.0,,"SELECT ""Description"" AS product, SUM(""Quantity"" * ""UnitPrice"") AS total_revenue FROM data GROUP BY ""Description"" ORDER BY total_revenue DESC LIMIT 1"
-What is the median quantity per row?,True,1,1.5,,SELECT median(Quantity) AS median_quantity FROM data
-How many rows have a missing description?,True,1,1.2,,SELECT COUNT(*) AS missing_description FROM data WHERE Description IS NULL OR Description = ''
-How many custmers are there from France?,True,1,1.0,,"SELECT COUNT(DISTINCT ""CustomerID"") AS num_customers FROM data WHERE ""Country"" = 'France'"
+dataset,question,passed,attempts,seconds,error,generated_sql
+Online Retail,How many rows are in the data?,True,1,1.4,,SELECT COUNT(*) AS row_count FROM data
+Online Retail,How many unique customers are there?,True,1,1.4,,"SELECT COUNT(DISTINCT ""CustomerID"") AS unique_customers FROM data WHERE ""CustomerID"" IS NOT NULL"
+Online Retail,How many different countries are there?,True,1,1.1,,"SELECT COUNT(DISTINCT ""Country"") AS country_count FROM data"
+Online Retail,How many unique invoices are there?,True,1,0.9,,"SELECT COUNT(DISTINCT ""InvoiceNo"") AS unique_invoices FROM data"
+Online Retail,How many different products (stock codes) are there?,True,1,1.2,,SELECT COUNT(DISTINCT StockCode) AS product_count FROM data
+Online Retail,What is the total revenue?,True,1,2.0,,SELECT SUM(Quantity * UnitPrice) AS total_revenue FROM data
+Online Retail,What is the average unit price?,True,1,1.8,,"SELECT AVG(""UnitPrice"") AS avg_unit_price FROM data"
+Online Retail,How many rows have a negative quantity?,True,1,4.6,,SELECT COUNT(*) AS negative_quantity_rows FROM data WHERE Quantity < 0
+Online Retail,Which country has the highest revenue?,True,1,2.3,,"SELECT Country AS country, SUM(Quantity * UnitPrice) AS total_revenue FROM data GROUP BY Country ORDER BY total_revenue DESC LIMIT 1"
+Online Retail,Sabse zyada revenue kis country se aaya?,True,1,3.0,,"SELECT Country AS country, SUM(Quantity * UnitPrice) AS total_revenue FROM data GROUP BY Country ORDER BY total_revenue DESC LIMIT 1"
+Online Retail,Which country has the most unique customers?,True,1,1.4,,"SELECT ""Country"" AS country, COUNT(DISTINCT ""CustomerID"") AS unique_customers FROM data WHERE ""CustomerID"" IS NOT NULL GROUP BY ""Country"" ORDER BY unique_customers DESC LIMIT 1"
+Online Retail,How many unique invoices came from Germany?,True,1,1.3,,SELECT COUNT(DISTINCT InvoiceNo) AS unique_invoices FROM data WHERE Country = 'Germany'
+Online Retail,What are the top 5 products by quantity sold?,True,1,1.3,,"SELECT Description AS product, SUM(Quantity) AS total_quantity FROM data GROUP BY Description ORDER BY total_quantity DESC LIMIT 5"
+Online Retail,What was the highest monthly revenue?,True,1,1.2,,"SELECT DATE_TRUNC('month', ""InvoiceDate"") AS month, SUM(""Quantity"" * ""UnitPrice"") AS total_revenue FROM data GROUP BY month ORDER BY total_revenue DESC LIMIT 1"
+Online Retail,What is the average order value per invoice?,True,1,1.2,,"SELECT AVG(order_total) AS avg_order_value FROM ( SELECT ""InvoiceNo"", SUM(""Quantity"" * ""UnitPrice"") AS order_total FROM data GROUP BY ""InvoiceNo"" ) AS sub"
+Online Retail,What was the total revenue in December 2010?,True,1,7.9,,"SELECT SUM(""Quantity"" * ""UnitPrice"") AS total_revenue FROM data WHERE ""InvoiceDate"" >= TIMESTAMP '2010-12-01' AND ""InvoiceDate"" < TIMESTAMP '2011-01-01'"
+Online Retail,How many invoices were cancelled?,True,1,2.3,,"SELECT COUNT(DISTINCT ""InvoiceNo"") AS cancelled_invoices FROM data WHERE ""InvoiceNo"" LIKE 'C%'"
+Online Retail,What is the total revenue excluding the United Kingdom?,True,1,2.4,,"SELECT SUM(""Quantity"" * ""UnitPrice"") AS total_revenue FROM data WHERE ""Country"" <> 'United Kingdom'"
+Online Retail,Who are the top 3 customers by total spend?,True,1,1.3,,"SELECT ""CustomerID"" AS customer_id, SUM(""Quantity"" * ""UnitPrice"") AS total_spend FROM data WHERE ""CustomerID"" IS NOT NULL GROUP BY ""CustomerID"" ORDER BY total_spend DESC LIMIT 3"
+Online Retail,How many customers placed more than 10 orders?,True,1,2.4,,"SELECT COUNT(*) AS customers_gt_10_orders FROM ( SELECT ""CustomerID"", COUNT(DISTINCT ""InvoiceNo"") AS orders FROM data WHERE ""CustomerID"" IS NOT NULL GROUP BY ""CustomerID"" ) sub WHERE orders > 10"
+Online Retail,What percentage of revenue comes from the United Kingdom?,True,1,61.7,,"SELECT (SUM(CASE WHEN ""Country"" = 'United Kingdom' THEN ""Quantity"" * ""UnitPrice"" ELSE 0 END) / SUM(""Quantity"" * ""UnitPrice"") * 100) AS uk_percentage FROM data"
+Online Retail,Which product has the highest total revenue?,True,1,1.0,,"SELECT ""Description"" AS product, SUM(""Quantity"" * ""UnitPrice"") AS total_revenue FROM data GROUP BY ""Description"" ORDER BY total_revenue DESC LIMIT 1"
+Online Retail,What is the median quantity per row?,True,1,1.6,,"SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY ""Quantity"") AS median_quantity FROM data"
+Online Retail,How many rows have a missing description?,True,1,1.4,,"SELECT COUNT(*) AS missing_description FROM data WHERE ""Description"" IS NULL OR ""Description"" = ''"
+Online Retail,How many custmers are there from France?,True,1,1.3,,"SELECT COUNT(DISTINCT ""CustomerID"") AS num_customers FROM data WHERE ""Country"" = 'France'"
+Telco Churn,How many customers churned?,True,1,1.0,,"SELECT COUNT(*) AS churned_customers FROM data WHERE ""Churn"" = 'Yes'"
+Telco Churn,What is the churn rate as a percentage?,True,1,1.0,,"SELECT AVG(CASE WHEN ""Churn"" = 'Yes' THEN 1 ELSE 0 END) * 100 AS churn_rate_pct FROM data"
+Telco Churn,Which contract type has the highest churn rate?,True,1,1.3,,"SELECT ""Contract"" AS contract_type, AVG(CASE WHEN ""Churn"" = 'Yes' THEN 1.0 ELSE 0.0 END) AS churn_rate FROM data GROUP BY ""Contract"" ORDER BY churn_rate DESC LIMIT 1"
+Telco Churn,What is the average monthly charge for customers who churned?,True,1,1.1,,"SELECT AVG(""MonthlyCharges"") AS avg_monthly_charge FROM data WHERE ""Churn"" = 'Yes'"
+Telco Churn,How many senior citizens are there?,True,1,1.2,,SELECT COUNT(*) AS senior_count FROM data WHERE SeniorCitizen = 1
+Telco Churn,What is the average tenure in months?,True,1,2.4,,SELECT AVG(tenure) AS avg_tenure FROM data
+Telco Churn,How many customers have fiber optic internet?,True,1,0.9,,SELECT COUNT(*) AS fiber_customers FROM data WHERE InternetService = 'Fiber optic'
+Telco Churn,Which payment method is the most common?,True,1,1.1,,"SELECT ""PaymentMethod"" AS payment_method, COUNT(*) AS count FROM data GROUP BY ""PaymentMethod"" ORDER BY count DESC LIMIT 1"
+Telco Churn,What percentage of customers have no internet service?,True,1,1.2,,"SELECT (COUNT(*) FILTER (WHERE ""InternetService"" = 'No') * 100.0 / COUNT(*)) AS pct_no_internet FROM data"
+Telco Churn,How many customers have a missing TotalCharges?,True,1,1.3,,"SELECT COUNT(*) AS missing_totalcharges FROM data WHERE ""TotalCharges"" IS NULL"
+Telco Churn,What is the average monthly charge for month-to-month customers?,True,1,0.9,,"SELECT AVG(""MonthlyCharges"") AS avg_monthly_charge FROM data WHERE ""Contract"" = 'Month-to-month'"
+Telco Churn,How many customers use electronic check?,True,1,0.8,,"SELECT COUNT(*) AS electronic_check_customers FROM data WHERE ""PaymentMethod"" = 'Electronic check'"
+Telco Disguised,How many customers left?,True,1,1.3,,SELECT COUNT(*) AS left_customers FROM data WHERE left_flag = 1
+Telco Disguised,What is the average monthly fee?,True,1,0.7,,SELECT AVG(monthly_fee) AS avg_monthly_fee FROM data
+Telco Disguised,What is the average months active for customers who left?,True,1,0.6,,SELECT AVG(months_active) AS avg_months_active FROM data WHERE left_flag = 1
+Telco Disguised,How many customers are on the 2Y term?,True,1,1.4,,SELECT COUNT(*) AS customer_count FROM data WHERE term = '2Y'
+Telco Disguised,Which term has the highest share of customers who left?,True,1,1.0,,"SELECT term, SUM(left_flag)::DOUBLE / COUNT(*) AS left_share FROM data GROUP BY term ORDER BY left_share DESC LIMIT 1"
+Telco Disguised,How many customers pay by E-CHK?,True,1,1.0,,SELECT COUNT(*) AS e_chk_customers FROM data WHERE pay_mode = 'E-CHK'
+Telco Disguised,What is the total lifetime fee?,True,1,0.8,,SELECT SUM(lifetime_fee) AS total_lifetime_fee FROM data
+Telco Disguised,How many customers are seniors?,True,1,1.0,,SELECT COUNT(*) AS senior_count FROM data WHERE is_senior = 1
+Telco Disguised,How many customers are on plan F?,True,1,0.8,,SELECT COUNT(*) AS num_customers FROM data WHERE net_plan = 'F'
+Telco Disguised,What is the average monthly fee for customers on plan F?,True,1,0.9,,SELECT AVG(monthly_fee) AS avg_monthly_fee FROM data WHERE net_plan = 'F'
+Telco Disguised,Which pay mode is the most common?,True,1,1.4,,SELECT pay_mode FROM data GROUP BY pay_mode ORDER BY COUNT(*) DESC LIMIT 1
+Telco Disguised,How many customers have no lifetime fee recorded?,True,1,1.1,,SELECT COUNT(*) AS customers_no_lifetime_fee FROM data WHERE lifetime_fee IS NULL
